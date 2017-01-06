@@ -6,9 +6,9 @@ import os
 here = os.path.abspath(os.path.dirname(__file__))
 README = open(os.path.join(here, 'README.rst')).read()
 
-version = '0.1'
+version = '0.0.2rc0'
 
-install_requires = ['sphinx']
+install_requires = ['pycrypto', 'sphinx', 'termcolor']
 packages_list = ['documenter']
 
 
