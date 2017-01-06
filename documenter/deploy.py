@@ -17,11 +17,13 @@ import sys
 from documenter.utils import get_github_username_repo, touch
 
 SSH_CONFIG = """
-    Host github.com
+    Host %s
         StrictHostKeyChecking no
-        HostName github.com
+        HostName %s
         IdentityFile %s
 """
+
+HOST_URL = {'github': "github.com"}
 
 PULL_REQUEST_FLAGS = {'travis': "TRAVIS_PULL_REQUEST",
                       'jenkins': "JENKINS_PULL_REQUEST"}
@@ -57,7 +59,9 @@ class Documentation(object):
                 self.original_ssh_config = sshconfig.read()
 
         with open(self.ssh_config_file, "w") as sshconfig:
-            sshconfig.write(SSH_CONFIG % self.key_file)
+            sshconfig.write(SSH_CONFIG % (HOST_URL[self.host],
+                                          HOST_URL[self.host],
+                                          self.key_file))
 
     def is_pull_request(self):
         try:
@@ -96,8 +100,11 @@ class Documentation(object):
         """
         sha = subprocess.check_output(["git", "rev-parse", "HEAD"])
 
-        self.upstream = self.repo
-        github_user, github_repo = get_github_username_repo(self.repo)
+        host_user, host_repo = get_github_username_repo(self.repo)
+        print host_user, host_repo
+        self.upstream = "git@%s:%s/%s.git" % (HOST_URL[self.host],
+                                              host_user,
+                                              host_repo)
 
         enc_key_file = abspath(joinpath(self.root, "docs", ".documenter.enc"))
         has_ssh_key = isfile(enc_key_file)
@@ -177,7 +184,7 @@ class Documentation(object):
 
         with open('index.html', 'w') as f:
             f.write('<meta http-equiv="refresh" content="0; url=http://%s.github.io/%s/latest"/>' %
-                    (github_user, github_repo))
+                    (host_user, host_repo))
 
         # Add, commit, and push the docs to the remote.
         subprocess.call(["git", "add", "-A", "."])
