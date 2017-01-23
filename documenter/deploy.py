@@ -27,6 +27,8 @@ HOST_URL = {'github': "github.com"}
 
 PULL_REQUEST_FLAGS = {'travis': "TRAVIS_PULL_REQUEST",
                       'jenkins': "JENKINS_PULL_REQUEST"}
+TAG_FLAGS = {'travis': "TRAVIS_TAG",
+             'jenkins': "JENKINS_TAG"}
 
 
 class Documentation(object):
