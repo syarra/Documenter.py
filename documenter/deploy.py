@@ -203,7 +203,7 @@ class Documentation(object):
 
         # Clean up temporary directories
         rm(target_dir)
-        rm(tmp_dir)
+        # rm(tmp_dir)
 
         # Restore user defined ssh configuration
         self.restore_ssh_config()
