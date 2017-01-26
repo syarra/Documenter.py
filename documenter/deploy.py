@@ -43,7 +43,7 @@ class Documentation(object):
         self.dirname = kwargs.get('dirname', "")
         self.host = kwargs.get('host', "github")
         self.original_ssh_config = None
-        self.upstream = kwargs.get('upstream', None)
+        self.local_upstream = kwargs.get('local_upstream', None)
         self.key_file = None
 
     def restore_ssh_config(self):
@@ -97,35 +97,43 @@ class Documentation(object):
             `latest`: branch that "tracks" the latest generated documentation.
                       (default: `"master"`)
 
-            `upstream`: remote repository to fetch from. 
+            `local_upstream`: remote repository to fetch from. 
                         (default: `None`)
 
             `make`: list of commands to be used to convert the markdown files to HTML.
                     (default: ['make', 'html'])
         """
-        sha = subprocess.check_output(["git", "rev-parse", "HEAD"])
+        sha = subprocess.check_output(["git", "rev-parse", "HEAD"]).strip()
         current_branch = subprocess.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD'])
 
         host_user, host_repo = get_github_username_repo(self.repo)
         print host_user, host_repo
 
-        if self.upstream is None:
-            self.upstream = "git@%s:%s/%s.git" % (HOST_URL[self.host],
+        self.upstream = "git@%s:%s/%s.git" % (HOST_URL[self.host],
                                                   host_user,
                                                   host_repo)
-	else:  # Pull the documentation branch to avoid conflicts
+
+        if self.local_upstream is not None:
+	    # Pull the documentation branch to avoid conflicts
+            print "git", "checkout", self.branch
             p = Popen(["git", "checkout", self.branch],
                       stdin=PIPE, stdout=PIPE, stderr=PIPE)
+            p.communicate()
+            # print subprocess.check_output(["git", "checkout", self.branch])
+            print subprocess.check_output(["git", "branch"])
+            print "git", "pull", "origin", self.branch
             p = Popen(["git", "pull", "origin", self.branch],
                       stdin=PIPE, stdout=PIPE, stderr=PIPE)
             output, err = p.communicate()
             if p.returncode:
                 raise RuntimeError(
                     "could not update the local upstream: %s\n%s" % (output, err))
-             p = Popen(["git", "checkout", current_branch],
+            print "git", "checkout", "-f", sha
+            p = Popen(["git", "checkout", "-f", sha],
                       stdin=PIPE, stdout=PIPE, stderr=PIPE)
- 
-           
+            output, err = p.communicate()
+            print subprocess.check_output(["git", "branch"])
+
 
         enc_key_file = abspath(joinpath(self.root, "docs", ".documenter.enc"))
         has_ssh_key = isfile(enc_key_file)
@@ -149,7 +157,7 @@ class Documentation(object):
         cd(docs)
         if not exists(self.target):
             mkdir(self.target)
-            subprocess.call(self.make)
+        subprocess.call(self.make)
 
         if self.is_pull_request():
             print_with_color("Skipping documentation deployment", 'magenta')
@@ -167,18 +175,30 @@ class Documentation(object):
         subprocess.call(["git", "config", "user.email", "'autodocs'"])
 
         # Fetch from remote and checkout the branch.
+        if self.local_upstream is not None:
+            if subprocess.call(["git", "remote", "add", "local_upstream", self.local_upstream]):
+                raise RuntimeError("could not add new remote repo.")
         if subprocess.call(["git", "remote", "add", "upstream", self.upstream]):
             raise RuntimeError("could not add new remote repo.")
 
-        p = Popen(["git", "fetch", "upstream"],
-                  stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        if self.local_upstream is not None:
+            p = Popen(["git", "fetch", "local_upstream"],
+                      stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        else:
+            p = Popen(["git", "fetch", "upstream"],
+                      stdin=PIPE, stdout=PIPE, stderr=PIPE)
+
         output, err = p.communicate()
         if p.returncode:
             raise RuntimeError(
-                "could not fetch from remote: %s\n%s" % (output, err))
+                "could not fetch from upstream: %s\n%s" % (output, err))
 
-        p = Popen(["git", "checkout", "-b", self.branch, "upstream/" + self.branch],
-                  stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        if self.local_upstream is not None:
+            p = Popen(["git", "checkout", "-b", self.branch, "local_upstream/" + self.branch],
+                      stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        else:
+            p = Popen(["git", "checkout", "-b", self.branch, "upstream/" + self.branch],
+                      stdin=PIPE, stdout=PIPE, stderr=PIPE)
         output, err = p.communicate()
 
         if "Cannot update paths and switch to branch" in err:
