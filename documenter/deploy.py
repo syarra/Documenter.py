@@ -112,6 +112,17 @@ class Documentation(object):
             self.upstream = "git@%s:%s/%s.git" % (HOST_URL[self.host],
                                                   host_user,
                                                   host_repo)
+	else:  # Pull the documentation branch to avoid conflicts
+            p = Popen(["git", "checkout", self.branch],
+                      stdin=PIPE, stdout=PIPE, stderr=PIPE)
+            p = Popen(["git", "pull", "origin", self.branch],
+                      stdin=PIPE, stdout=PIPE, stderr=PIPE)
+            output, err = p.communicate()
+            if p.returncode:
+                raise RuntimeError(
+                    "could not update the local upstream: %s\n%s" % (output, err))
+
+           
 
         enc_key_file = abspath(joinpath(self.root, "docs", ".documenter.enc"))
         has_ssh_key = isfile(enc_key_file)
