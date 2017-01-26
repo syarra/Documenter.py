@@ -104,6 +104,7 @@ class Documentation(object):
                     (default: ['make', 'html'])
         """
         sha = subprocess.check_output(["git", "rev-parse", "HEAD"])
+        current_branch = subprocess.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD'])
 
         host_user, host_repo = get_github_username_repo(self.repo)
         print host_user, host_repo
@@ -121,7 +122,9 @@ class Documentation(object):
             if p.returncode:
                 raise RuntimeError(
                     "could not update the local upstream: %s\n%s" % (output, err))
-
+             p = Popen(["git", "checkout", current_branch],
+                      stdin=PIPE, stdout=PIPE, stderr=PIPE)
+ 
            
 
         enc_key_file = abspath(joinpath(self.root, "docs", ".documenter.enc"))
