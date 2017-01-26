@@ -43,7 +43,7 @@ class Documentation(object):
         self.dirname = kwargs.get('dirname', "")
         self.host = kwargs.get('host', "github")
         self.original_ssh_config = None
-        self.upstream = None
+        self.upstream = kwargs.get('upstream', None)
         self.key_file = None
 
     def restore_ssh_config(self):
@@ -97,6 +97,9 @@ class Documentation(object):
             `latest`: branch that "tracks" the latest generated documentation.
                       (default: `"master"`)
 
+            `upstream`: remote repository to fetch from. 
+                        (default: `None`)
+
             `make`: list of commands to be used to convert the markdown files to HTML.
                     (default: ['make', 'html'])
         """
@@ -104,9 +107,11 @@ class Documentation(object):
 
         host_user, host_repo = get_github_username_repo(self.repo)
         print host_user, host_repo
-        self.upstream = "git@%s:%s/%s.git" % (HOST_URL[self.host],
-                                              host_user,
-                                              host_repo)
+
+        if self.upstream is None:
+            self.upstream = "git@%s:%s/%s.git" % (HOST_URL[self.host],
+                                                  host_user,
+                                                  host_repo)
 
         enc_key_file = abspath(joinpath(self.root, "docs", ".documenter.enc"))
         has_ssh_key = isfile(enc_key_file)
