@@ -14,7 +14,7 @@ from base64 import b64decode
 import stat
 import sys
 
-from documenter.utils import get_github_username_repo, touch
+from documenter.utils import get_github_username_repo, touch, print_with_color
 
 SSH_CONFIG = """
     Host %s
@@ -23,7 +23,8 @@ SSH_CONFIG = """
         IdentityFile %s
 """
 
-HOST_URL = {'github': "github.com"}
+HOST_URL = {'github': "github.com",
+            'jenkins': ""}
 
 PULL_REQUEST_FLAGS = {'travis': "TRAVIS_PULL_REQUEST",
                       'jenkins': "JENKINS_PULL_REQUEST"}
