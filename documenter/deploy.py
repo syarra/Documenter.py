@@ -23,11 +23,11 @@ SSH_CONFIG = """
         IdentityFile %s
 """
 
-HOST_URL = {'github': "github.com",
-            'jenkins': ""}
+HOST_URL = {'github': "github.com"}
 
 PULL_REQUEST_FLAGS = {'travis': "TRAVIS_PULL_REQUEST",
                       'jenkins': "JENKINS_PULL_REQUEST"}
+
 TAG_FLAGS = {'travis': "TRAVIS_TAG",
              'jenkins': "JENKINS_TAG"}
 
@@ -43,6 +43,7 @@ class Documentation(object):
         self.make = kwargs.get('make', ["make", "html"])
         self.dirname = kwargs.get('dirname', "")
         self.host = kwargs.get('host', "github")
+        self.ci = kwargs.get('ci', 'travis')
         self.original_ssh_config = None
         self.local_upstream = kwargs.get('local_upstream', None)
         self.key_file = None
@@ -68,7 +69,7 @@ class Documentation(object):
 
     def is_pull_request(self):
         try:
-            return eval(environ[PULL_REQUEST_FLAGS[self.host]])
+            return eval(environ[PULL_REQUEST_FLAGS[self.ci]])
         except KeyError:
             return False
 
