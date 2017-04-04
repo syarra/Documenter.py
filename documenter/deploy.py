@@ -113,6 +113,10 @@ class Documentation(object):
                                                   host_user,
                                                   host_repo)
 
+        if self.is_pull_request():
+            print_with_color("Skipping documentation deployment", 'magenta')
+            return
+
         if self.local_upstream is not None:
 	    # Pull the documentation branch to avoid conflicts
             print "git", "checkout", self.branch
@@ -158,10 +162,6 @@ class Documentation(object):
         if not exists(self.target):
             mkdir(self.target)
         subprocess.call(self.make)
-
-        if self.is_pull_request():
-            print_with_color("Skipping documentation deployment", 'magenta')
-            return
 
         # Versioned docs directories.
         latest_dir = joinpath(self.dirname, "latest")
