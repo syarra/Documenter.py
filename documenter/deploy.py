@@ -68,7 +68,7 @@ class Documentation(object):
 
     def is_pull_request(self):
         try:
-            return environ[PULL_REQUEST_FLAGS[self.host]]
+            return eval(environ[PULL_REQUEST_FLAGS[self.host]])
         except KeyError:
             return False
 
