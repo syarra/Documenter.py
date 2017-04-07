@@ -13,6 +13,7 @@ from shutil import rmtree as rm
 from base64 import b64decode
 import stat
 import sys
+import logging
 
 from documenter.utils import get_github_username_repo, touch, print_with_color
 
@@ -47,6 +48,9 @@ class Documentation(object):
         self.original_ssh_config = None
         self.local_upstream = kwargs.get('local_upstream', None)
         self.key_file = None
+
+        logging.basicConfig(format='%(asctime)s    %(message)s',
+                        datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.DEBUG)
 
     def restore_ssh_config(self):
         if self.original_ssh_config:
@@ -105,38 +109,44 @@ class Documentation(object):
             `make`: list of commands to be used to convert the markdown files to HTML.
                     (default: ['make', 'html'])
         """
-        sha = subprocess.check_output(["git", "rev-parse", "HEAD"]).strip()
-        current_branch = subprocess.check_output(['git', 'rev-parse', '--abbrev-ref', 'HEAD'])
+        cmd = ["git", "rev-parse", "HEAD"]
+        logging.debug(cmd)
+        sha = subprocess.check_output(cmd).strip()
+        cmd = ['git', 'rev-parse', '--abbrev-ref', 'HEAD']
+        logging.debug(cmd)
+        current_branch = subprocess.check_output(cmd)
 
         host_user, host_repo = get_github_username_repo(self.repo)
-        print host_user, host_repo
+        logging.debug('host username: %s, host repo: %s', host_user, host_repo)
 
         self.upstream = "git@%s:%s/%s.git" % (HOST_URL[self.host],
                                                   host_user,
                                                   host_repo)
 
+        logging.debug('upstream: %s' % self.upstream)
         if self.is_pull_request():
             print_with_color("Skipping documentation deployment", 'magenta')
             return
 
         if self.local_upstream is not None:
 	    # Pull the documentation branch to avoid conflicts
-            print "git", "checkout", self.branch
-            p = Popen(["git", "checkout", self.branch],
-                      stdin=PIPE, stdout=PIPE, stderr=PIPE)
-            p.communicate()
-            # print subprocess.check_output(["git", "checkout", self.branch])
+            cmd = ["git", "checkout", self.branch]
+            logging.debug(cmd)
+            p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+            output, err = p.communicate()
+            if p.returncode:
+                raise RuntimeError("could not run %s" % cmd)
             print subprocess.check_output(["git", "branch"])
+            cmd = ["git", "pull", "origin", self.branch]
             print "git", "pull", "origin", self.branch
-            p = Popen(["git", "pull", "origin", self.branch],
-                      stdin=PIPE, stdout=PIPE, stderr=PIPE)
+            p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
             output, err = p.communicate()
             if p.returncode:
                 raise RuntimeError(
                     "could not update the local upstream: %s\n%s" % (output, err))
-            print "git", "checkout", "-f", sha
-            p = Popen(["git", "checkout", "-f", sha],
-                      stdin=PIPE, stdout=PIPE, stderr=PIPE)
+            cmd = ["git", "checkout", "-f", sha]
+            logging.debug(cmd)
+            p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
             output, err = p.communicate()
             print subprocess.check_output(["git", "branch"])
 
@@ -178,17 +188,24 @@ class Documentation(object):
 
         # Fetch from remote and checkout the branch.
         if self.local_upstream is not None:
-            if subprocess.call(["git", "remote", "add", "local_upstream", self.local_upstream]):
+            cmd = ["git", "remote", "add", "local_upstream", self.local_upstream]
+            logging.debug(cmd)
+            out = subprocess.call(cmd)
+            if out:
                 raise RuntimeError("could not add new remote repo.")
-        if subprocess.call(["git", "remote", "add", "upstream", self.upstream]):
+        cmd = ["git", "remote", "add", "upstream", self.upstream]
+        logging.debug(cmd)
+        out = subprocess.call(cmd)
+        if out:
             raise RuntimeError("could not add new remote repo.")
 
         if self.local_upstream is not None:
-            p = Popen(["git", "fetch", "local_upstream"],
-                      stdin=PIPE, stdout=PIPE, stderr=PIPE)
+            cmd = ["git", "fetch", "upstream", self.branch]
         else:
-            p = Popen(["git", "fetch", "upstream"],
-                      stdin=PIPE, stdout=PIPE, stderr=PIPE)
+            cmd = ["git", "fetch", "upstream", self.branch]
+        
+        logging.debug(cmd)
+        p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
 
         output, err = p.communicate()
         if p.returncode:
@@ -196,11 +213,13 @@ class Documentation(object):
                 "could not fetch from upstream: %s\n%s" % (output, err))
 
         if self.local_upstream is not None:
-            p = Popen(["git", "checkout", "-b", self.branch, "local_upstream/" + self.branch],
-                      stdin=PIPE, stdout=PIPE, stderr=PIPE)
+            cmd = ["git", "checkout", "-b", self.branch, "upstream/" + self.branch]
         else:
-            p = Popen(["git", "checkout", "-b", self.branch, "upstream/" + self.branch],
-                      stdin=PIPE, stdout=PIPE, stderr=PIPE)
+            cmd = ["git", "checkout", "-b", self.branch, "upstream/" + self.branch]
+
+        logging.debug(cmd)
+        p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+
         output, err = p.communicate()
 
         if "Cannot update paths and switch to branch" in err:
@@ -230,9 +249,13 @@ class Documentation(object):
                     (host_user, host_repo))
 
         # Add, commit, and push the docs to the remote.
-        subprocess.call(["git", "add", "-A", "."])
+        cmd = ["git", "add", "-A", "."]
+        logging.debug(cmd)
+        subprocess.call(cmd)
 
-        subprocess.call(["git", "commit", "-m", "build based on %s" % sha])
+        cmd = ["git", "commit", "-m", "build based on %s" % sha]
+        logging.debug(cmd)
+        subprocess.call(cmd)
 
         if subprocess.call(["git", "push", "-q", "upstream", "HEAD:%s" % self.branch]):
             raise RuntimeError("could not push to remote repo.")
