@@ -103,7 +103,7 @@ class Documentation(object):
             `latest`: branch that "tracks" the latest generated documentation.
                       (default: `"master"`)
 
-            `local_upstream`: remote repository to fetch from. 
+            `local_upstream`: remote repository to fetch from.
                         (default: `None`)
 
             `make`: list of commands to be used to convert the markdown files to HTML.
@@ -257,7 +257,7 @@ class Documentation(object):
         logging.debug(cmd)
         subprocess.call(cmd)
 
-        if subprocess.call(["git", "push", "-q", "upstream", "HEAD:%s" % self.branch]):
+        if subprocess.call(["git", "push", "-q", "-f", "upstream", "HEAD:%s" % self.branch]):
             raise RuntimeError("could not push to remote repo.")
 
         # Clean up temporary directories
