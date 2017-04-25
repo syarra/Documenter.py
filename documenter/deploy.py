@@ -32,6 +32,19 @@ PULL_REQUEST_FLAGS = {'travis': "TRAVIS_PULL_REQUEST",
 TAG_FLAGS = {'travis': "TRAVIS_TAG",
              'jenkins': "JENKINS_TAG"}
 
+def log_and_execute(cmd):
+    """Logs and executes the provided command.
+
+    Args:
+       cmd: List of instructions.
+    """
+    logging.debug(' '.join(map(str, cmd)))
+    p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+    output, err = p.communicate()
+    if p.returncode:
+        raise RuntimeError("Could not run %s\nError: %s" % (' '.join(map(str, cmd)), err))
+    return output
+
 
 class Documentation(object):
 
@@ -73,6 +86,7 @@ class Documentation(object):
 
     def is_pull_request(self):
         try:
+            logging.debug("Is a PR: %s" % environ[PULL_REQUEST_FLAGS[self.ci]])
             return eval(environ[PULL_REQUEST_FLAGS[self.ci]])
         except KeyError:
             return False
@@ -109,12 +123,8 @@ class Documentation(object):
             `make`: list of commands to be used to convert the markdown files to HTML.
                     (default: ['make', 'html'])
         """
-        cmd = ["git", "rev-parse", "HEAD"]
-        logging.debug(cmd)
-        sha = subprocess.check_output(cmd).strip()
-        cmd = ['git', 'rev-parse', '--abbrev-ref', 'HEAD']
-        logging.debug(cmd)
-        current_branch = subprocess.check_output(cmd)
+        sha = log_and_execute(["git", "rev-parse", "HEAD"]).strip()
+        current_branch = log_and_execute(['git', 'rev-parse', '--abbrev-ref', 'HEAD'])
 
         host_user, host_repo = get_github_username_repo(self.repo)
         logging.debug('host username: %s, host repo: %s', host_user, host_repo)
@@ -130,25 +140,11 @@ class Documentation(object):
 
         if self.local_upstream is not None:
 	    # Pull the documentation branch to avoid conflicts
-            cmd = ["git", "checkout", self.branch]
-            logging.debug(cmd)
-            p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-            output, err = p.communicate()
-            if p.returncode:
-                raise RuntimeError("could not run %s" % cmd)
-            print subprocess.check_output(["git", "branch"])
-            cmd = ["git", "pull", "origin", self.branch]
-            print "git", "pull", "origin", self.branch
-            p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-            output, err = p.communicate()
-            if p.returncode:
-                raise RuntimeError(
-                    "could not update the local upstream: %s\n%s" % (output, err))
-            cmd = ["git", "checkout", "-f", sha]
-            logging.debug(cmd)
-            p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-            output, err = p.communicate()
-            print subprocess.check_output(["git", "branch"])
+            log_and_execute(["git", "checkout", self.branch])
+            log_and_execute(["git", "branch"])
+            log_and_execute(["git", "pull", "origin", self.branch])
+            log_and_execute(["git", "checkout", "-f", sha])
+            log_and_execute(["git", "branch"])
 
 
         enc_key_file = abspath(joinpath(self.root, "docs", ".documenter.enc"))
@@ -167,7 +163,7 @@ class Documentation(object):
         self.create_ssh_config()
 
         tmp_dir = tempfile.mkdtemp()
-        print tmp_dir
+        logging.debug("temporary directory is: " %tmp_dir)
 
         docs = joinpath(self.root, "docs")
         cd(docs)
@@ -188,54 +184,22 @@ class Documentation(object):
 
         # Fetch from remote and checkout the branch.
         if self.local_upstream is not None:
-            cmd = ["git", "remote", "add", "local_upstream", self.local_upstream]
-            logging.debug(cmd)
-            out = subprocess.call(cmd)
-            if out:
-                raise RuntimeError("could not add new remote repo.")
-        cmd = ["git", "remote", "add", "upstream", self.upstream]
-        logging.debug(cmd)
-        out = subprocess.call(cmd)
-        if out:
-            raise RuntimeError("could not add new remote repo.")
+            log_and_execute(["git", "remote", "add", "local_upstream", self.local_upstream])
 
-        if self.local_upstream is not None:
-            cmd = ["git", "fetch", "upstream", self.branch]
-        else:
-            cmd = ["git", "fetch", "upstream", self.branch]
-        
-        logging.debug(cmd)
-        p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-
-        output, err = p.communicate()
-        if p.returncode:
-            raise RuntimeError(
-                "could not fetch from upstream: %s\n%s" % (output, err))
-
-        if self.local_upstream is not None:
-            cmd = ["git", "checkout", "-b", self.branch, "upstream/" + self.branch]
-        else:
-            cmd = ["git", "checkout", "-b", self.branch, "upstream/" + self.branch]
-
-        logging.debug(cmd)
-        p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-
-        output, err = p.communicate()
-
-        if "Cannot update paths and switch to branch" in err:
+        log_and_execute(["git", "remote", "add", "upstream", self.upstream])
+        log_and_execute(["git", "fetch", "upstream", self.branch])
+        try:
+            log_and_execute(["git", "checkout", "-b", self.branch, "upstream/" + self.branch])
+        except RuntimeError:
             try:
-                subprocess.call(
-                    ["git", "checkout", "--orphan", self.branch])
+                subprocess.call(["git", "checkout",
+                                 "--orphan", self.branch])
                 subprocess.call(["git", "rm", "--cached", "-r", "."])
             except:
                 raise RuntimeError("could not checkout remote branch.")
-        elif p.returncode:
-            raise RuntimeError(
-                "could not checkout remote branch: %s\n%s" % (output, err))
 
         # Copy docs to `latest`, or `stable`, `<release>`, and `<version>`
         # directories.
-        print latest_dir
         if exists(latest_dir):
             rm(latest_dir)
         mv(joinpath(target_dir, "html"), latest_dir)
@@ -249,16 +213,9 @@ class Documentation(object):
                     (host_user, host_repo))
 
         # Add, commit, and push the docs to the remote.
-        cmd = ["git", "add", "-A", "."]
-        logging.debug(cmd)
-        subprocess.call(cmd)
-
-        cmd = ["git", "commit", "-m", "build based on %s" % sha]
-        logging.debug(cmd)
-        subprocess.call(cmd)
-
-        if subprocess.call(["git", "push", "-q", "upstream", "HEAD:%s" % self.branch]):
-            raise RuntimeError("could not push to remote repo.")
+        log_and_execute(["git", "add", "-A", "."])
+        log_and_execute(["git", "commit", "-m", "build based on %s" % sha])
+        log_and_execute(["git", "push", "-q", "upstream", "HEAD:%s" % self.branch])
 
         # Clean up temporary directories
         rm(target_dir)
