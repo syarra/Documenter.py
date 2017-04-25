@@ -41,8 +41,8 @@ def log_and_execute(cmd):
     logging.debug(' '.join(map(str, cmd)))
     p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE)
     output, err = p.communicate()
-    if p.returncode:
-        raise RuntimeError("Could not run %s\nError: %s" % (' '.join(map(str, cmd)), err))
+    if p.returncode and not 'nothing to commit, working directory clean' in output:
+        raise RuntimeError("Could not run '%s'\nOutput: %s\nError: %s" % (' '.join(map(str, cmd)), output, err))
     return output
 
 
@@ -163,7 +163,7 @@ class Documentation(object):
         self.create_ssh_config()
 
         tmp_dir = tempfile.mkdtemp()
-        logging.debug("temporary directory is: " %tmp_dir)
+        logging.debug("temporary directory is: %s" %tmp_dir)
 
         docs = joinpath(self.root, "docs")
         cd(docs)
@@ -214,7 +214,7 @@ class Documentation(object):
 
         # Add, commit, and push the docs to the remote.
         log_and_execute(["git", "add", "-A", "."])
-        log_and_execute(["git", "commit", "-m", "build based on %s" % sha])
+        log_and_execute(["git", "commit", "-m", "'build based on %s'" % sha])
         log_and_execute(["git", "push", "-q", "upstream", "HEAD:%s" % self.branch])
 
         # Clean up temporary directories
