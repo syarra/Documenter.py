@@ -35,6 +35,8 @@ TAG_FLAGS = {'travis': "TRAVIS_TAG",
 def log_and_execute(cmd):
     """Logs and executes the provided command.
 
+    Raises an error if the provided command fails to be executed.
+
     Args:
        cmd: List of instructions.
     """
@@ -117,7 +119,7 @@ class Documentation(object):
             `latest`: branch that "tracks" the latest generated documentation.
                       (default: `"master"`)
 
-            `local_upstream`: remote repository to fetch from. 
+            `local_upstream`: remote repository to fetch from.
                         (default: `None`)
 
             `make`: list of commands to be used to convert the markdown files to HTML.
@@ -169,7 +171,7 @@ class Documentation(object):
         cd(docs)
         if not exists(self.target):
             mkdir(self.target)
-        subprocess.call(self.make)
+        log_and_execute(self.make)
 
         # Versioned docs directories.
         latest_dir = joinpath(self.dirname, "latest")
@@ -178,9 +180,9 @@ class Documentation(object):
 
         # Setup git.
         cd(tmp_dir)
-        subprocess.call(["git", "init"])
-        subprocess.call(["git", "config", "user.name", "'autodocs'"])
-        subprocess.call(["git", "config", "user.email", "'autodocs'"])
+        log_and_execute(["git", "init"])
+        log_and_execute(["git", "config", "user.name", "'autodocs'"])
+        log_and_execute(["git", "config", "user.email", "'autodocs'"])
 
         # Fetch from remote and checkout the branch.
         if self.local_upstream is not None:
@@ -192,9 +194,9 @@ class Documentation(object):
             log_and_execute(["git", "checkout", "-b", self.branch, "upstream/" + self.branch])
         except RuntimeError:
             try:
-                subprocess.call(["git", "checkout",
+                log_and_execute(["git", "checkout",
                                  "--orphan", self.branch])
-                subprocess.call(["git", "rm", "--cached", "-r", "."])
+                log_and_execute(["git", "rm", "--cached", "-r", "."])
             except:
                 raise RuntimeError("could not checkout remote branch.")
 
