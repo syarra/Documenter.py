@@ -54,8 +54,11 @@ class Documentation(object):
         self.root = getcwd()
         self.repo = repo
         self.target = kwargs.get('target', "build")
-        self.branch = kwargs.get('branch', "gh-pages")
-        self.latest = kwargs.get('latest', "master")
+        self.doc_branch = kwargs.get('doc_branch', "gh-pages")
+        self.stable = kwargs.get('stable', "master")
+        self.latest = kwargs.get('latest', "develop")
+        self.stable_dir = kwargs.get('stable_dir', "stable")
+        self.latest_dir = kwargs.get('latest_dir', "latest")
         self.make = kwargs.get('make', ["make", "html"])
         self.dirname = kwargs.get('dirname', "")
         self.host = kwargs.get('host', "github")
@@ -113,11 +116,11 @@ class Documentation(object):
                       written to. This directory **must** be added to the repository's `.gitignore` file.
                       (default: `"site"`)
 
-            `branch`: branch where the generated documentation is pushed.
+            `doc_branch`: branch where the generated documentation is pushed.
                       (default: `"gh-pages"`)
 
             `latest`: branch that "tracks" the latest generated documentation.
-                      (default: `"master"`)
+                      (default: `"develop"`)
 
             `local_upstream`: remote repository to fetch from.
                         (default: `None`)
@@ -127,6 +130,7 @@ class Documentation(object):
         """
         sha = log_and_execute(["git", "rev-parse", "HEAD"]).strip()
         current_branch = log_and_execute(['git', 'rev-parse', '--abbrev-ref', 'HEAD'])
+        logging.debug('current branch: %s' % current_branch)
 
         host_user, host_repo = get_github_username_repo(self.repo)
         logging.debug('host username: %s, host repo: %s', host_user, host_repo)
@@ -174,8 +178,8 @@ class Documentation(object):
         log_and_execute(self.make)
 
         # Versioned docs directories.
-        latest_dir = joinpath(self.dirname, "latest")
-        stable_dir = joinpath(self.dirname, "stable")
+        latest_dir = joinpath(self.dirname, self.latest_dir)
+        stable_dir = joinpath(self.dirname, self.stable_dir)
         target_dir = joinpath(docs, self.target)
 
         # Setup git.
@@ -202,16 +206,22 @@ class Documentation(object):
 
         # Copy docs to `latest`, or `stable`, `<release>`, and `<version>`
         # directories.
-        if exists(latest_dir):
-            rm(latest_dir)
-        mv(joinpath(target_dir, "html"), latest_dir)
+        if current_branch == self.latest:
+            if exists(latest_dir):
+                rm(latest_dir)
+
+            mv(joinpath(target_dir, "html"), latest_dir)
+        if current_branch == self.stable:
+            if exists(stable_dir):
+                rm(stable_dir)
+            mv(joinpath(target_dir, "html"), stable_dir)
 
         # Create a .nojekyll file so that Github pages behaves correctly with folders starting
         # with an underscore.
         touch('.nojekyll')
 
         with open('index.html', 'w') as f:
-            f.write('<meta http-equiv="refresh" content="0; url=http://%s.github.io/%s/latest"/>' %
+            f.write('<meta http-equiv="refresh" content="0; url=http://%s.github.io/%s/stable"/>' %
                     (host_user, host_repo))
 
         # Add, commit, and push the docs to the remote.
