@@ -209,12 +209,15 @@ class Documentation(object):
         if current_branch == self.latest:
             if exists(latest_dir):
                 rm(latest_dir)
-
             mv(joinpath(target_dir, "html"), latest_dir)
-        if current_branch == self.stable:
+        elif current_branch == self.stable:
             if exists(stable_dir):
                 rm(stable_dir)
             mv(joinpath(target_dir, "html"), stable_dir)
+        else:
+            if exists('unstable'):
+                rm('unstable')
+            mv(joinpath(target_dir, "html"), 'unstable')
 
         # Create a .nojekyll file so that Github pages behaves correctly with folders starting
         # with an underscore.
