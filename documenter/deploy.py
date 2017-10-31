@@ -146,9 +146,9 @@ class Documentation(object):
 
         if self.local_upstream is not None:
 	    # Pull the documentation branch to avoid conflicts
-            log_and_execute(["git", "checkout", self.branch])
+            log_and_execute(["git", "checkout", self.doc_branch])
             log_and_execute(["git", "branch"])
-            log_and_execute(["git", "pull", "origin", self.branch])
+            log_and_execute(["git", "pull", "origin", self.doc_branch])
             log_and_execute(["git", "checkout", "-f", sha])
             log_and_execute(["git", "branch"])
 
@@ -193,13 +193,13 @@ class Documentation(object):
             log_and_execute(["git", "remote", "add", "local_upstream", self.local_upstream])
 
         log_and_execute(["git", "remote", "add", "upstream", self.upstream])
-        log_and_execute(["git", "fetch", "upstream", self.branch])
+        log_and_execute(["git", "fetch", "upstream", self.doc_branch])
         try:
-            log_and_execute(["git", "checkout", "-b", self.branch, "upstream/" + self.branch])
+            log_and_execute(["git", "checkout", "-b", self.doc_branch, "upstream/" + self.doc_branch])
         except RuntimeError:
             try:
                 log_and_execute(["git", "checkout",
-                                 "--orphan", self.branch])
+                                 "--orphan", self.doc_branch])
                 log_and_execute(["git", "rm", "--cached", "-r", "."])
             except:
                 raise RuntimeError("could not checkout remote branch.")
@@ -227,7 +227,7 @@ class Documentation(object):
         # Add, commit, and push the docs to the remote.
         log_and_execute(["git", "add", "-A", "."])
         log_and_execute(["git", "commit", "-m", "'build based on %s'" % sha])
-        log_and_execute(["git", "push", "-q", "upstream", "HEAD:%s" % self.branch])
+        log_and_execute(["git", "push", "-q", "upstream", "HEAD:%s" % self.doc_branch])
 
         # Clean up temporary directories
         rm(target_dir)
