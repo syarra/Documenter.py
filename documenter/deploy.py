@@ -207,13 +207,14 @@ class Documentation(object):
         # Copy docs to `latest`, or `stable`, `<release>`, and `<version>`
         # directories.
         if current_branch == 'origin/' + self.latest:
-            print "I should be here!"
             if exists(latest_dir):
                 rm(latest_dir)
+            logging.debug("Copying HTML folder to %s", latest_dir)
             mv(joinpath(target_dir, "html"), latest_dir)
         elif current_branch == 'origin/' + self.stable:
             if exists(stable_dir):
                 rm(stable_dir)
+            logging.debug("Copying HTML folder to %s", stable_dir)
             mv(joinpath(target_dir, "html"), stable_dir)
 
         # Create a .nojekyll file so that Github pages behaves correctly with folders starting
