@@ -10,6 +10,7 @@ from shutil import move as mv
 import subprocess
 from subprocess import Popen, PIPE
 from shutil import rmtree as rm
+from shutil import copytree as cp
 from base64 import b64decode
 import stat
 import sys
@@ -206,16 +207,23 @@ class Documentation(object):
 
         # Copy docs to `latest`, or `stable`, `<release>`, and `<version>`
         # directories.
+        destination_dir = None
         if current_branch == 'origin/' + self.latest:
-            if exists(latest_dir):
-                rm(latest_dir)
-            logging.debug("Copying HTML folder to %s", latest_dir)
-            mv(joinpath(target_dir, "html"), latest_dir)
+            destination_dir = latest_dir
         elif current_branch == 'origin/' + self.stable:
-            if exists(stable_dir):
-                rm(stable_dir)
-            logging.debug("Copying HTML folder to %s", stable_dir)
-            mv(joinpath(target_dir, "html"), stable_dir)
+            destination_dir = stable_dir
+
+        if destination_folder is not None:
+            if exists(destination_dir):
+                rm(destination_dir)
+            logging.debug("Copying HTML folder to %s", destination_dir)
+            mv(joinpath(target_dir, "html"), destination_dir)
+
+            if environ['GIT_TAG_NAME']:
+                logging.debug("This commit (%s) was tagged. A copy of the doc will be stored at %s.", 
+                              sha, environ['GIT_TAG_NAME'])
+                cp(destination_dir, environ['GIT_TAG_NAME'])                    
+
 
         # Create a .nojekyll file so that Github pages behaves correctly with folders starting
         # with an underscore.
