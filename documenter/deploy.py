@@ -129,7 +129,7 @@ class Documentation(object):
                     (default: ['make', 'html'])
         """
         sha = log_and_execute(["git", "rev-parse", "HEAD"]).strip()
-        current_branch = log_and_execute(['git', 'rev-parse', '--abbrev-ref', 'HEAD'])
+        current_branch = environ['GIT_BRANCH']
         logging.debug('current branch: %s' % current_branch)
 
         host_user, host_repo = get_github_username_repo(self.repo)
@@ -206,18 +206,15 @@ class Documentation(object):
 
         # Copy docs to `latest`, or `stable`, `<release>`, and `<version>`
         # directories.
-        if current_branch == self.latest:
+        if current_branch == 'origin/' + self.latest:
+            print "I should be here!"
             if exists(latest_dir):
                 rm(latest_dir)
             mv(joinpath(target_dir, "html"), latest_dir)
-        elif current_branch == self.stable:
+        elif current_branch == 'origin/' + self.stable:
             if exists(stable_dir):
                 rm(stable_dir)
             mv(joinpath(target_dir, "html"), stable_dir)
-        else:
-            if exists('unstable'):
-                rm('unstable')
-            mv(joinpath(target_dir, "html"), 'unstable')
 
         # Create a .nojekyll file so that Github pages behaves correctly with folders starting
         # with an underscore.
