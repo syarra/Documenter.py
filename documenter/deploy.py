@@ -213,7 +213,7 @@ class Documentation(object):
         elif current_branch == 'origin/' + self.stable:
             destination_dir = stable_dir
 
-        if destination_folder is not None:
+        if destination_dir is not None:
             if exists(destination_dir):
                 rm(destination_dir)
             logging.debug("Copying HTML folder to %s", destination_dir)
