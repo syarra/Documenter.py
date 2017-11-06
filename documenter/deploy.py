@@ -219,7 +219,7 @@ class Documentation(object):
             logging.debug("Copying HTML folder to %s", destination_dir)
             mv(joinpath(target_dir, "html"), destination_dir)
 
-            if environ['GIT_TAG_NAME']:
+            if 'GIT_TAG_NAME' in environ.keys():
                 logging.debug("This commit (%s) was tagged. A copy of the doc will be stored at %s.", 
                               sha, environ['GIT_TAG_NAME'])
                 cp(destination_dir, environ['GIT_TAG_NAME'])                    
