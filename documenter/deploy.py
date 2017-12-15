@@ -183,7 +183,7 @@ class Documentation(object):
         latest_dir = joinpath(self.dirname, self.latest_dir)
         stable_dir = joinpath(self.dirname, self.stable_dir)
         target_dir = joinpath(docs, self.target)
-        unstable_dir = jointpath(self.dirname, self.unstable_dir)
+        unstable_dir = joinpath(self.dirname, self.unstable_dir)
 
         # Setup git.
         cd(tmp_dir)
