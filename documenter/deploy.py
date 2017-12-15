@@ -60,6 +60,7 @@ class Documentation(object):
         self.latest = kwargs.get('latest', "develop")
         self.stable_dir = kwargs.get('stable_dir', "stable")
         self.latest_dir = kwargs.get('latest_dir', "latest")
+        self.unstable_dir = kwargs.get('unstable_dir', "unstable")
         self.make = kwargs.get('make', ["make", "html"])
         self.dirname = kwargs.get('dirname', "")
         self.host = kwargs.get('host', "github")
@@ -182,6 +183,7 @@ class Documentation(object):
         latest_dir = joinpath(self.dirname, self.latest_dir)
         stable_dir = joinpath(self.dirname, self.stable_dir)
         target_dir = joinpath(docs, self.target)
+        unstable_dir = jointpath(self.dirname, self.unstable_dir)
 
         # Setup git.
         cd(tmp_dir)
@@ -212,6 +214,8 @@ class Documentation(object):
             destination_dir = latest_dir
         elif current_branch == 'origin/' + self.stable:
             destination_dir = stable_dir
+        else:
+            destination_dir = unstable_dir
 
         if destination_dir is not None:
             if exists(destination_dir):
