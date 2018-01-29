@@ -168,7 +168,7 @@ class Documentation(object):
         # Give READ/WRITE permissions
         chmod(self.key_file, stat.S_IREAD | stat.S_IWRITE)
 
-        self.create_ssh_config()
+        # self.create_ssh_config()
 
         tmp_dir = tempfile.mkdtemp()
         logging.debug("temporary directory is: %s" %tmp_dir)
@@ -224,9 +224,9 @@ class Documentation(object):
             mv(joinpath(target_dir, "html"), destination_dir)
 
             if 'GIT_TAG_NAME' in environ.keys():
-                logging.debug("This commit (%s) was tagged. A copy of the doc will be stored at %s.", 
+                logging.debug("This commit (%s) was tagged. A copy of the doc will be stored at %s.",
                               sha, environ['GIT_TAG_NAME'])
-                cp(destination_dir, environ['GIT_TAG_NAME'])                    
+                cp(destination_dir, environ['GIT_TAG_NAME'])
 
 
         # Create a .nojekyll file so that Github pages behaves correctly with folders starting
@@ -247,4 +247,4 @@ class Documentation(object):
         rm(tmp_dir)
 
         # Restore user defined ssh configuration
-        self.restore_ssh_config()
+        # self.restore_ssh_config()
