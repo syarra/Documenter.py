@@ -196,7 +196,7 @@ class Documentation(object):
             log_and_execute(["git", "remote", "add", "local_upstream", self.local_upstream])
 
         log_and_execute(["git", "remote", "add", "upstream", self.upstream])
-        log_and_execute(["git", "fetch", "upstream", self.doc_branch])
+        log_and_execute(["git", "fetch", "upstream"])
         try:
             log_and_execute(["git", "checkout", "-b", self.doc_branch, "upstream/" + self.doc_branch])
         except RuntimeError:
