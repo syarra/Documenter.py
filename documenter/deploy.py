@@ -203,7 +203,7 @@ class Documentation(object):
             try:
                 log_and_execute(["git", "checkout",
                                  "--orphan", self.doc_branch])
-                log_and_execute(["git", "rm", "--cached", "-r", "."])
+                #log_and_execute(["git", "rm", "--cached", "-r", "."])
             except:
                 raise RuntimeError("could not checkout remote branch.")
 
